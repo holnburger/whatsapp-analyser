@@ -210,33 +210,33 @@ ggsave("typical_words.png", dpi = 300)
 first_day <- whatsapp_chat[[1, "datetime"]]
 
 activity_per_day <- whatsapp_chat %>%
-    mutate(day = as.integer(difftime(datetime, first_day, units = "days")))  %>%
-    group_by(user, day) %>%
-    summarise(messages = n()) %>%
-    ggplot(aes(x = day, y = messages, fill = user)) +
-    geom_col(show.legend = FALSE) +
-    facet_wrap(~user, ncol = 1) +
-    labs(title = "Nutzeraktivität (Nachrichten pro Tag)", 
-         subtitle = paste0("WhatsApp-Verlauf der Gruppe ", whatsapp_group),
-         x = "Alter der Gruppe in Tagen", y = "") + 
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(), 
-          panel.grid=element_blank()) +
-ggsave("user_activity_day.png", dpi = 300)
+  mutate(day = as.integer(difftime(datetime, first_day, units = "days")))  %>%
+  group_by(user, day) %>%
+  summarise(messages = n()) %>%
+  ggplot(aes(x = day, y = messages, fill = user)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~user, ncol = 1, strip.position = "left") +
+  labs(title = "Nutzeraktivität (Nachrichten pro Tag)", 
+       subtitle = paste0("WhatsApp-Verlauf der Gruppe ", whatsapp_group),
+       x = "Alter der Gruppe in Tagen", y = "") + 
+  theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(), 
+        panel.grid=element_blank()) +
+  ggsave("user_activity_day.png", dpi = 300)
 
 activity_per_hour <-  whatsapp_chat %>%
-    count(hour = hour(datetime), user) %>%
-    group_by(user) %>%
-    mutate(freq = n / sum(n)) %>%
-    ggplot(aes(x = hour, y = freq, fill = user)) +
-    geom_col(show.legend = FALSE) +
-    facet_wrap(~user, ncol = 1) +
-    labs(title = "Nutzeraktivität pro Uhrzeit", 
-         subtitle = paste0("WhatsApp-Verlauf der Gruppe ", whatsapp_group),
-         x = "Uhrzeit", y = "") + 
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(), 
-          panel.grid=element_blank())
+  count(hour = hour(datetime), user) %>%
+  group_by(user) %>%
+  mutate(freq = n / sum(n)) %>%
+  ggplot(aes(x = hour, y = freq, fill = user)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~user, ncol = 1, strip.position = "left") +
+  labs(title = "Nutzeraktivität pro Uhrzeit", 
+       subtitle = paste0("WhatsApp-Verlauf der Gruppe ", whatsapp_group),
+       x = "Uhrzeit", y = "") +
+  theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(), 
+        panel.grid=element_blank())
 ggsave("user_activity_hour.png", dpi = 300) 
