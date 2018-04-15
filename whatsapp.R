@@ -7,7 +7,7 @@ library(pacman)
 
 p_load(emo, lubridate, magrittr, qdapRegex, tidytext, tidyverse, wordcloud)
 
-setwd("/Desktop/to/whatsapp/export/")
+setwd("/path/to/whatsapp/export/")
 
 whatsapp_group = "\"Gruppenname\""
 
