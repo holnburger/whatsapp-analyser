@@ -5,9 +5,9 @@
 if (!require("pacman")) install.packages("pacman")
 library(pacman)
 
-p_load(emo, lubridate, magrittr, qdapRegex, tidytext, tidyverse, wordcloud)
+p_load(emo, igraph, lubridate, magrittr, qdapRegex, tidytext, tidyverse, wordcloud)
 
-setwd("/path/to/whatsapp/export/")
+setwd("/path/to/whatsapp/export")
 
 whatsapp_group = "\"Gruppenname\""
 
@@ -238,3 +238,25 @@ activity_per_hour <-  whatsapp_chat %>%
   theme(panel.grid=element_blank()) + 
   scale_y_continuous(labels = scales::percent)
 ggsave("user_activity_hour.png", dpi = 300) 
+
+
+#------------------------#
+#    network analysis    #
+#------------------------#
+
+users <- whatsapp_chat %>%
+  select(user) %>%
+  distinct(user)
+
+png("graph.png", width=5, height=5, units="in", res=300)
+user_network <- whatsapp_chat %>%
+  select(user, text) %>%
+  rename(from = user) %>%
+  mutate(to = str_extract(text, paste(users$user, collapse = "|"))) %>%
+  select(from, to) %>%
+  na.omit() %>%
+  group_by(from, to) %>%
+  summarise(weight = n()) %>%
+  graph_from_data_frame()
+plot(user_network)
+dev.off()
