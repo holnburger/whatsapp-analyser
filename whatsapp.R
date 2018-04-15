@@ -7,7 +7,7 @@ library(pacman)
 
 p_load(emo, lubridate, magrittr, qdapRegex, tidytext, tidyverse, wordcloud)
 
-setwd("/path/to/whatsapp/export/")
+setwd("/Desktop/to/whatsapp/export/")
 
 whatsapp_group = "\"Gruppenname\""
 
@@ -23,7 +23,7 @@ whatsapp_date <- "(\\d{0,2}\\.\\d{2}\\.\\d{2}?)"
 whatsapp_time <- "([01]?[0-9]|2[0-3]):([0-5][0-9]):?([0-5][0-9])"
 # detects "14:20:18"
 whatsapp_username <- "([a-zA-Z]{3,16}){1}"
-# detects the first Name between 3 and 16 letters
+# detects the first name between 3 and 16 letters
 whatsapp_notice <- ".*?(hinzugefügt$|geändert$)"
 # detects system messages ("XXX XXX hat XXX hinzugefügt" or "XXX XXX hat das Gruppenbild geänder")
 whatsapp_files <- ".*?(<[^>]*angehängt>$|<[^>]*weggelassen>$|vcf$)"
@@ -222,8 +222,8 @@ activity_per_day <- whatsapp_chat %>%
   theme(axis.title.y=element_blank(),
         axis.text.y=element_blank(),
         axis.ticks.y=element_blank(), 
-        panel.grid=element_blank()) +
-  ggsave("user_activity_day.png", dpi = 300)
+        panel.grid=element_blank())
+ggsave("user_activity_day.png", dpi = 300)
 
 activity_per_hour <-  whatsapp_chat %>%
   count(hour = hour(datetime), user) %>%
@@ -235,8 +235,6 @@ activity_per_hour <-  whatsapp_chat %>%
   labs(title = "Nutzeraktivität pro Uhrzeit", 
        subtitle = paste0("WhatsApp-Verlauf der Gruppe ", whatsapp_group),
        x = "Uhrzeit", y = "") +
-  theme(axis.title.y=element_blank(),
-        axis.text.y=element_blank(),
-        axis.ticks.y=element_blank(), 
-        panel.grid=element_blank())
+  theme(panel.grid=element_blank()) + 
+  scale_y_continuous(labels = scales::percent)
 ggsave("user_activity_hour.png", dpi = 300) 
