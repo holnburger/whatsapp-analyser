@@ -25,7 +25,7 @@ whatsapp_time <- "([01]?[0-9]|2[0-3]):([0-5][0-9]):?([0-5][0-9])"
 whatsapp_username <- "([a-zA-Z]{3,16}){1}"
 # detects the first name between 3 and 16 letters
 whatsapp_notice <- ".*?(hinzugefügt$|geändert$)"
-# detects system messages ("XXX XXX hat XXX hinzugefügt" or "XXX XXX hat das Gruppenbild geänder")
+# detects system messages ("XXX XXX hat XXX hinzugefügt" or "XXX XXX hat das Gruppenbild geändert")
 whatsapp_files <- ".*?(<[^>]*angehängt>$|<[^>]*weggelassen>$|vcf$)"
 # detects files (or, if not exported with files, missing files)
 
@@ -257,6 +257,9 @@ user_network <- whatsapp_chat %>%
   na.omit() %>%
   group_by(from, to) %>%
   summarise(weight = n()) %>%
-  graph_from_data_frame()
-plot(user_network)
+  graph.data.frame()
+
+plot(user_network,
+     layout=layout.fruchterman.reingold(user_network,weights=E(user_network)$weight),
+     edge.width=E(user_network)$weight)
 dev.off()
