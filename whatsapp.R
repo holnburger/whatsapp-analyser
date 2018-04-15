@@ -7,7 +7,7 @@ library(pacman)
 
 p_load(emo, igraph, lubridate, magrittr, qdapRegex, tidytext, tidyverse, wordcloud)
 
-setwd("/path/to/whatsapp/export")
+setwd("/path/to/whatsapp/export/")
 
 whatsapp_group = "\"Gruppenname\""
 
@@ -28,6 +28,10 @@ whatsapp_notice <- ".*?(hinzugefügt$|geändert$)"
 # detects system messages ("XXX XXX hat XXX hinzugefügt" or "XXX XXX hat das Gruppenbild geändert")
 whatsapp_files <- ".*?(<[^>]*angehängt>$|<[^>]*weggelassen>$|vcf$)"
 # detects files (or, if not exported with files, missing files)
+
+#----android pattern---
+# whatsapp_datetime <- "\\d{0,2}\\.\\d{2}\\.\\d{2}?\\ um ([01]?[0-9]|2[0-3]):([0-5][0-9]):?([0-5][0-9])? - "
+## detects "10.10.17 um 18:50 - "
 
 #-------------------------------------------#
 #   read file, clean structure reread file  #
@@ -245,8 +249,9 @@ ggsave("user_activity_hour.png", dpi = 300)
 #------------------------#
 
 users <- whatsapp_chat %>%
-  select(user) %>%
-  distinct(user)
+  select(user, text) %>%
+  group_by(user) %>%
+  summarise(messages = n())
 
 png("graph.png", width=5, height=5, units="in", res=300)
 user_network <- whatsapp_chat %>%
@@ -257,9 +262,14 @@ user_network <- whatsapp_chat %>%
   na.omit() %>%
   group_by(from, to) %>%
   summarise(weight = n()) %>%
+  left_join(users, by = c("from" = "user")) %>%
   graph.data.frame()
 
+set.seed(666)
 plot(user_network,
-     layout=layout.fruchterman.reingold(user_network,weights=E(user_network)$weight),
-     edge.width=E(user_network)$weight)
+     layout = layout.fruchterman.reingold(user_network, weights = E(user_network)$weight),
+     edge.width = E(user_network)$weight,
+     vertex.label.family = "Helvetica",
+     vertex.label.color = "grey20", 
+     vertex.color = "lightblue")
 dev.off()
