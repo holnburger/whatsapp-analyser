@@ -16,7 +16,7 @@ whatsapp_group = "\"Gruppenname\""
 #-------------------------------------#
 # ! dependend on the smartphone OS and system language
 
-whatsapp_datetime <- "^(\\[\\d{0,2}\\.\\d{2}\\.\\d{2}?\\, ([01]?[0-9]|2[0-3]):([0-5][0-9]):?([0-5][0-9])?\\])"
+whatsapp_datetime <- "(\\[\\d{0,2}\\.\\d{2}\\.\\d{2}?\\, ([01]?[0-9]|2[0-3]):([0-5][0-9]):?([0-5][0-9])?\\])"
 # detects the following pattern: [29.01.18, 14:20:18]
 whatsapp_date <- "(\\d{0,2}\\.\\d{2}\\.\\d{2}?)"
 # detects "29.01.18"
@@ -24,9 +24,9 @@ whatsapp_time <- "([01]?[0-9]|2[0-3]):([0-5][0-9]):?([0-5][0-9])"
 # detects "14:20:18"
 whatsapp_username <- "([a-zA-Z]{3,16}){1}"
 # detects the first name between 3 and 16 letters
-whatsapp_notice <- ".*?(hinzugefügt$|geändert$)"
+whatsapp_notice <- ".*?(hinzugefügt$|geändert$|erstellt$)"
 # detects system messages ("XXX XXX hat XXX hinzugefügt" or "XXX XXX hat das Gruppenbild geändert")
-whatsapp_files <- ".*?(<[^>]*angehängt>$|<[^>]*weggelassen>$|vcf$)"
+whatsapp_files <- ".*?(<[^>]*angehängt>$|<[^>]*weggelassen>$|vcf $)"
 # detects files (or, if not exported with files, missing files)
 
 #----android pattern---
@@ -38,7 +38,7 @@ whatsapp_files <- ".*?(<[^>]*angehängt>$|<[^>]*weggelassen>$|vcf$)"
 #-------------------------------------------#
 
 raw <- read_file("_chat.txt") 
-clean <- str_replace_all(raw, "(\\n)", "")
+clean <- str_replace_all(raw, "(\\n)", " ")
 clean <- str_replace_all(clean, whatsapp_datetime, "\n\\1")
 # we need to do this because of the structure of the export
 # whatsapp exports line breaks within messages as line breaks in the export file (duh…)
@@ -60,7 +60,8 @@ whatsapp_chat %<>%
     mutate(datetime = paste0(date, " ", time)) %>%
     mutate(user = str_extract(raw, whatsapp_username)) %>%
     mutate(text = str_replace(raw, whatsapp_datetime, "")) %>%
-    mutate(datetime = as.POSIXct(datetime))
+    mutate(datetime = as.POSIXct(datetime, format = "%Y-%m-%d %H:%M:%S")) %>%
+    na.omit()
 
 # we already got most of it
 # let's delete system messages and the user names in the 'text' column
@@ -265,11 +266,14 @@ user_network <- whatsapp_chat %>%
   left_join(users, by = c("from" = "user")) %>%
   graph.data.frame()
 
+deg <- degree(user_network, mode="all")
+
 set.seed(666)
 plot(user_network,
      layout = layout.fruchterman.reingold(user_network, weights = E(user_network)$weight),
      edge.width = E(user_network)$weight,
      vertex.label.family = "Helvetica",
      vertex.label.color = "grey20", 
-     vertex.color = "lightblue")
+     vertex.color = "lightblue", 
+     vertex.size = sqrt(deg)*10)
 dev.off()
