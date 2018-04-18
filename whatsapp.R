@@ -5,7 +5,7 @@
 if (!require("pacman")) install.packages("pacman")
 library(pacman)
 
-p_load(emo, igraph, lubridate, magrittr, qdapRegex, tidytext, tidyverse, wordcloud)
+p_load(emo, igraph, lubridate, magrittr, qdapRegex, tidytext, tidyverse, wordcloud, visNetwork)
 
 setwd("/path/to/whatsapp/export/")
 
@@ -16,28 +16,31 @@ whatsapp_group = "\"Gruppenname\""
 #-------------------------------------#
 # ! dependend on the smartphone OS and system language
 
-whatsapp_datetime <- "(\\[\\d{0,2}\\.\\d{2}\\.\\d{2}?\\, ([01]?[0-9]|2[0-3]):([0-5][0-9]):?([0-5][0-9])?\\])"
+#whatsapp_datetime <- "(\\[\\d{0,2}\\.\\d{2}\\.\\d{2}?\\, ([01]?[0-9]|2[0-3]):([0-5][0-9]):?([0-5][0-9])?\\])"
 # detects the following pattern: [29.01.18, 14:20:18]
 whatsapp_date <- "(\\d{0,2}\\.\\d{2}\\.\\d{2}?)"
 # detects "29.01.18"
-whatsapp_time <- "([01]?[0-9]|2[0-3]):([0-5][0-9]):?([0-5][0-9])"
+whatsapp_time <- "([01]?[0-9]|2[0-3]):([0-5][0-9])"
 # detects "14:20:18"
 whatsapp_username <- "([a-zA-Z]{3,16}){1}"
 # detects the first name between 3 and 16 letters
-whatsapp_notice <- ".*?(hinzugefügt$|geändert$|erstellt$)"
+whatsapp_notice <- ".*?(hinzugefügt$|geändert$|entfernt$|verlassen$)"
 # detects system messages ("XXX XXX hat XXX hinzugefügt" or "XXX XXX hat das Gruppenbild geändert")
-whatsapp_files <- ".*?(<[^>]*angehängt>$|<[^>]*weggelassen>$|vcf $)"
+whatsapp_files <- ".*?(<[^>]*angehängt>|<[^>]*weggelassen>|vcf$)"
 # detects files (or, if not exported with files, missing files)
+date_format <- "%Y-%m-%d %H:%M:%S" 
 
 #----android pattern---
-# whatsapp_datetime <- "\\d{0,2}\\.\\d{2}\\.\\d{2}?\\ um ([01]?[0-9]|2[0-3]):([0-5][0-9]):?([0-5][0-9])? - "
+# whatsapp_datetime <- "(\\d{0,2}\\.\\d{2}\\.\\d{2}? um ([01]?[0-9]|2[0-3]):([0-5][0-9]):?([0-5][0-9])? - )"
+# whatsapp_time <- "([01]?[0-9]|2[0-3]):([0-5][0-9])"
+# date_format <- "%Y-%m-%d %H:%M" 
 ## detects "10.10.17 um 18:50 - "
 
 #-------------------------------------------#
 #   read file, clean structure reread file  #
 #-------------------------------------------#
 
-raw <- read_file("_chat.txt") 
+raw <- read_file("chat.txt") 
 clean <- str_replace_all(raw, "(\\n)", " ")
 clean <- str_replace_all(clean, whatsapp_datetime, "\n\\1")
 # we need to do this because of the structure of the export
@@ -60,7 +63,7 @@ whatsapp_chat %<>%
     mutate(datetime = paste0(date, " ", time)) %>%
     mutate(user = str_extract(raw, whatsapp_username)) %>%
     mutate(text = str_replace(raw, whatsapp_datetime, "")) %>%
-    mutate(datetime = as.POSIXct(datetime, format = "%Y-%m-%d %H:%M:%S")) %>%
+    mutate(datetime = as.POSIXct(datetime, format = date_format)) %>%
     na.omit()
 
 # we already got most of it
@@ -249,10 +252,20 @@ ggsave("user_activity_hour.png", dpi = 300)
 #    network analysis    #
 #------------------------#
 
-users <- whatsapp_chat %>%
-  select(user, text) %>%
-  group_by(user) %>%
-  summarise(messages = n())
+nodes <- whatsapp_chat %>%
+    group_by(id = user) %>%
+    summarise() %>%
+    mutate(label = id)
+
+edges <- whatsapp_chat %>%
+    select(user, text) %>%
+    rename(from = user) %>%
+    mutate(to = str_extract(text, paste(unique(whatsapp_chat$user), collapse = "|"))) %>%
+    select(from, to) %>%
+    na.omit() %>%
+    group_by(from,to) %>%
+    summarise(value = n())
+visNetwork(nodes, edges, width = "100%")
 
 png("graph.png", width=5, height=5, units="in", res=300)
 user_network <- whatsapp_chat %>%
@@ -264,7 +277,8 @@ user_network <- whatsapp_chat %>%
   group_by(from, to) %>%
   summarise(weight = n()) %>%
   left_join(users, by = c("from" = "user")) %>%
-  graph.data.frame()
+  graph.data.frame() %>%
+    toVisNetworkData()
 
 deg <- degree(user_network, mode="all")
 
